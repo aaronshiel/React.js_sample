@@ -32,3 +32,12 @@
     text-align: center;
     background-color: aqua;
 }
+
+.Password-No-Match{
+    color: red;
+    background-color: #282c34;
+}
+
+.User-Event{
+
+}
