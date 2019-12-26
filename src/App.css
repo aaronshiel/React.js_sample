@@ -37,7 +37,52 @@
     color: red;
     background-color: #282c34;
 }
-
 .User-Event{
-
+    display: block;
+    float: none;
+    z-index: auto;
+    cursor: default;
+    opacity: 1;
+    margin: 20px;
+    padding: 50px;
+    overflow: hidden;
+    border: 7px double;
+    word-wrap: break-word;
+    font: normal 20px/1 "Times New Roman", Times, serif;
+    color: rgba(255,255,255,1);
+    letter-spacing: 2px;
+    background: #0199d9;
+    -webkit-box-shadow: 5px 5px 3px 3px rgba(0,0,0,0.3) ;
+    box-shadow: 5px 5px 3px 3px rgba(0,0,0,0.3) ;
+    -webkit-transform-origin: 50% 50% 0;
+    transform-origin: 50% 50% 0;
+}
+.Planner-Title{
+    display: block;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+    z-index: auto;
+    width: 90%;
+    height: 6%;
+    position: relative;
+    cursor: default;
+    opacity: 1;
+    margin: 0;
+    padding: 20px;
+    overflow: visible;
+    border: 7px double;
+    -webkit-border-radius: 0;
+    border-radius: 0;
+    font: normal 43px/1 Arial Black, Gadget, sans-serif;
+    color: rgba(255,255,255,1);
+    text-align: center;
+    -o-text-overflow: ellipsis;
+    text-overflow: ellipsis;
+    letter-spacing: 4px;
+    background: #0199d9;
+    -webkit-box-shadow: 5px 5px 3px 3px rgba(0,0,0,0.3) ;
+    box-shadow: 5px 5px 3px 3px rgba(0,0,0,0.3) ;
+    -webkit-transform-origin: 50% 50% 0;
+    transform-origin: 50% 50% 0;
 }

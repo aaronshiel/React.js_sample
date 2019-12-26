@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import './App.css'
 
+
 class DisplayPlanner extends Component{
     constructor(props){
         super(props);
@@ -16,6 +17,10 @@ class DisplayPlanner extends Component{
             title: null,
             current_planner_id : this.props.current_planner_id,
 
+            //to be used to determine queue of fetches left
+            eventFetchQueue: 0,
+
+            event_count: 0,
             event_names: [],
             event_dates: [],
             event_descriptions: [],
@@ -24,9 +29,10 @@ class DisplayPlanner extends Component{
 
         this.GetPlannerInfo = this.GetPlannerInfo.bind(this);
         this.getEvents = this.getEvents.bind(this);
+        this.renderEvents = this.renderEvents.bind(this);
     }
 
-    /*create method for parent to add new event*/
+    //called at start, gathers the planner info, then gathers all the Event info
     GetPlannerInfo(){
         let data = new URLSearchParams();
         data.append('planner_id', this.state.current_planner_id);
@@ -39,6 +45,7 @@ class DisplayPlanner extends Component{
                  body: data,
             json: true,
         };
+        //TODO: use redux to hold info
         fetch('http://127.0.0.1:5000/get_planner_info' , options)
             .then(response =>{
                 if(response.ok){
@@ -49,11 +56,21 @@ class DisplayPlanner extends Component{
                             password: data.password,
                             related_events: data.related_events.split(','),
                             title: data.title,
-                            loading:false,
-                        })
+                        });
+                        //check if we have any events, if so, update them!
+                        if(data.related_events !== ""){
+                            this.setState({
+                                event_count: this.state.related_events.length,
+                            });
+                        }//else it just stays 0, good!
                     })
+                        //we need to down how many events are going to be queued
+                        .then(()=> this.setState({
+                            eventFetchQueue: this.state.event_count
+                            })
+                        )
                         .then(() =>
-                            this.getEvents(this.state.related_events.length)
+                        {this.getEvents(this.state.related_events.length);}
                         );
 
                 }else{
@@ -68,53 +85,113 @@ class DisplayPlanner extends Component{
         this.GetPlannerInfo();
     }
 
-    //TODO: LEFT OFF HERE, just got all the events info gathered, now create event html's for all events *easy mode*
-    getEvents(n){
-        console.log(n);
-        for(let i = 1; i < n; i += 1){
-            console.log(i);
+
+    //all events are gathered and stored as arrays here
+    async getEvents(){
+        if(this.state.event_count === 0) {
+            this.setState({
+                eventFetchQueue: 0,
+                loading:false,
+            });
+            return;
+        }
+        //TODO: use redux to hold info
+        //TODO: implement promise.all to grab all events at once
+        for(let i = 0; i < this.state.event_count; i += 1) {
             let data = new URLSearchParams();
             data.append('event_id', this.state.related_events[i]);
             const options = {
-                  method: 'post',
-                  headers: {
+                method: 'post',
+                headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
-                  },
-                     body: data,
+                },
+                body: data,
                 json: true,
             };
-            fetch('http://127.0.0.1:5000/get_event_info' , options)
-                .then(response =>{
-                    let events = this.state.event_dates;
-                    let descriptions = this.state.event_descriptions;
-                    let names = this.state.event_creator_names;
-                    if(response.ok){
+            await fetch('http://127.0.0.1:5000/get_event_info', options)
+                .then(response => {
+                    let events = [];
+                    events = events.concat(this.state.event_dates);
+                    let descriptions = [];
+                    descriptions = descriptions.concat(this.state.event_descriptions);
+                    let names = [];
+                    names = names.concat(this.state.event_creator_names);
+                    if (response.ok) {
                         response.json().then(data => {
+                            events.push(data.date);
+                            descriptions.push(data.description);
+                            names.push(data.creator_name);
                             this.setState({
-                                event_dates: events.push(data.date),
-                                event_descriptions: descriptions.push(data.description),
-                                event_creator_names: names.push(data.creator_name),
+                                //sometimes this causes an error
+                                event_dates: events,
+                                event_descriptions: descriptions,
+                                event_creator_names: names,
+                            });
+                        })
+                            .then(() =>{
+                                this.setState({
+                                    eventFetchQueue: this.state.eventFetchQueue - 1,
+                                    loading:false,
+                                });
                             })
-                        })
-                    }else{
-                        //TODO: if eventID does not exist, do something
-                        response.json().then(data =>{
-                            console.log(data);
-                        })
+                    } else {
+                        if(response.status === 404){
+                            console.log("could not find that event");
+                            this.setState({
+                                    eventFetchQueue: this.state.eventFetchQueue - 1,
+                                    loading:false,
+                                });
+                        }
                     }
+
                 });
+            console.log(this.state.event_descriptions);
         }
-        console.log(this.state.event_descriptions);
     }
 
+    renderEvents(){
+        if(this.state.event_count === 0)
+            return (
+              <div>
+                  No events found!
+              </div>
+            );
+        let list = [];
+        for (let i = 0; i < this.state.event_count; i += 1) {
+            console.log("name" + this.state.event_descriptions[i]);
+            list.push(
+                <div className={"User-Event"} key={i}>
+                    <h3>
+                        {this.state.event_dates[i]}
+                    </h3>
+                    <div>
+                        {this.state.event_descriptions[i]}
+                    </div>
+                    <div>
+                        Created by: {this.state.event_creator_names[i]}
+                    </div>
+                </div>
+            );
+        }
+        return list;
+    }
 
     render(){
-        return(
-            <div>
-                hello
-            </div>
-        )
-
+        if(this.state.loading || this.state.eventFetchQueue > 0) {
+            return (
+                <div>
+                    Loading, please wait...
+                </div>
+            );
+        }else{
+            let list = this.renderEvents();
+            return(
+                <div>
+                    <h1 className={"Planner-Title"}>{this.state.title}</h1>
+                    <div>{list}</div>
+                </div>
+            )
+        }
     }
 
 }
@@ -189,7 +266,6 @@ class LoginController extends Component{
             .then(response =>{
                 if(response.ok){
                     response.json().then(data => {
-                        console.log(data);
                         this.setState({
                             username: data.username,
                             preferred_name: data.preferred_name,
@@ -228,7 +304,6 @@ class LoginController extends Component{
                             table_names: data.user.table_names.split(','),
                             loggedin: true,
                         })
-                        //console.log(this.state.username);
                     })
                 }else{
                     if(response.status === 401)
@@ -336,6 +411,7 @@ class LoginController extends Component{
                 }}>
                     {/*display title of tables, this is the only info we have so far*/}
                     {this.state.table_names[i]}
+
                     {i}
                 </button>
             );
@@ -378,7 +454,7 @@ class LoginController extends Component{
                 return(
                   <div>
                       <h1>
-                          {/*TODO: pass in actual planner unique ID value for query*/}
+                          {/*passing in actual planner unique ID value for query*/}
                           <DisplayPlanner current_planner_id={this.state.related_tables[this.state.current_planner_id]}/>
                       </h1>
 
