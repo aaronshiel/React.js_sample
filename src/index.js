@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import './App.css'
 
-//TODO:
+//TODO: check google docs
 class CreateEventDisplay extends Component{
     constructor(props) {
         super(props);
@@ -19,6 +19,7 @@ class CreateEventDisplay extends Component{
         this.handleDescription = this.handleDescription.bind(this);
     }
 
+    //TODO: make all handle events into one method, for other classes too
     handleDate(event){
         this.setState({
             date: event.target.value,
@@ -63,12 +64,12 @@ class CreateEventDisplay extends Component{
                 <script>
                     {
                         window.onclick = function(event){
-                        if(event.target === document.getElementById("tempModal")){
-                            document.getElementById("tempModal").setAttribute("style", "display: none");
+                        if(event.target === document.getElementById("create_event_modal")){
+                            document.getElementById("create_event_modal").setAttribute("style", "display: none");
                         }
                     }}
                 </script>
-                <div className={"modal"} id={"tempModal"}>
+                <div className={"modal"} id={"create_event_modal"}>
                     <div className={"modal-content"}>
                         <label>
                             Date:
@@ -93,12 +94,52 @@ class CreateEventDisplay extends Component{
     }
 }
 
+//TODO: just created this, need
+class DeleteEventDisplay extends Component{
+    constructor(props) {
+        super(props);
+
+        this.state={
+            event_id_to_delete : this.props.event_id_to_delete,
+        }
+    }
+
+    render() {
+        return(
+            <div>
+                <script>
+                    {
+                        window.onclick = function(event){
+                        if(event.target === document.getElementById("delete_event_modal")){
+                            document.getElementById("delete_event_modal").setAttribute("style", "display: none");
+                        }
+                    }}
+                </script>
+                <div className={"modal"} id={"delete_event_modal"}>
+                    <div className={"modal-content"}>
+                        <label>
+                            Are you sure you want to delete this event?
+                            <button className={"Event-Button"}>
+                                Yes
+                            </button>
+                            <button className={"Event-Button"}>
+                                No
+                            </button>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+}
+
 class DisplayPlanner extends Component{
     constructor(props){
         super(props);
 
         this.state={
-            /*TODO: current_planner_id is already known through props*/
+            /*TODO: create a list of event objects, instead of having all the values*/
+            /*TODO: separated in arrays, memory leakage could occur*/
             loading:true,
             creator_name: null,
             members_allowed: null,
@@ -120,7 +161,6 @@ class DisplayPlanner extends Component{
         this.GetPlannerInfo = this.GetPlannerInfo.bind(this);
         this.getEvents = this.getEvents.bind(this);
         this.renderEvents = this.renderEvents.bind(this);
-        this.refresh = this.refresh.bind(this);
     }
 
     //called at start, gathers the planner info, then gathers all the Event info
@@ -277,10 +317,6 @@ class DisplayPlanner extends Component{
         return list;
     }
 
-    refresh(){
-
-    }
-
     render(){
         if(this.state.loading || this.state.eventFetchQueue > 0) {
             return (
@@ -320,9 +356,13 @@ class DisplayPlanner extends Component{
                                             event_list = this.renderEvents();
                                             }}>
                     </CreateEventDisplay>
+                    {/*delete event button info*/}
+                    <DeleteEventDisplay>
+                        {/*TODO: add onClick turn display : brick on delete buttons in renderlist*/}
+                    </DeleteEventDisplay>
                     <div>{event_list}</div>
                     <button className={"Event-Button"} style={float_left} onClick={() =>{
-                        document.getElementById("tempModal").setAttribute("style", "display: block");
+                        document.getElementById("create_event_modal").setAttribute("style", "display: block");
                         console.log("Modal visible")
                     }}>
                         Create New Event
