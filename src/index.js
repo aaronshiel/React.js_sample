@@ -2,6 +2,96 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import './App.css'
 
+//TODO:
+class CreateEventDisplay extends Component{
+    constructor(props) {
+        super(props);
+        //these values are what are sent up to the database
+        this.state={
+            date: "",
+            description: "",
+            current_user: this.props.current_user,
+            plannerID: this.props.current_planner_id,
+        };
+
+        this.handleEventCreate = this.handleEventCreate.bind(this);
+        this.handleDate = this.handleDate.bind(this);
+        this.handleDescription = this.handleDescription.bind(this);
+    }
+
+    handleDate(event){
+        this.setState({
+            date: event.target.value,
+        })
+    }
+
+    handleDescription(event){
+        this.setState({
+            description: event.target.value,
+        })
+    }
+
+    handleEventCreate(){
+        let data = new URLSearchParams();
+        data.append('username', this.state.current_user);
+        data.append('date', this.state.date);
+        data.append('description', this.state.description);
+        data.append('plannerID', this.state.plannerID);
+
+        const options = {
+              method: 'post',
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+                 body: data,
+            json: true,
+        };
+        fetch('http://127.0.0.1:5000/new_event' , options)
+            .then(response =>{
+                if(response.ok){
+                    this.props.refresh_event_list();
+                }else{
+                    if(response.status === 401)
+                        document.getElementById("Password-Match").innerHTML = "Account already exists";
+                }
+            })
+    }
+
+    render(){
+        return(
+            <div>
+                <script>
+                    {
+                        window.onclick = function(event){
+                        if(event.target === document.getElementById("tempModal")){
+                            document.getElementById("tempModal").setAttribute("style", "display: none");
+                        }
+                    }}
+                </script>
+                <div className={"modal"} id={"tempModal"}>
+                    <div className={"modal-content"}>
+                        <label>
+                            Date:
+                            <input id={"date-edit-input"} value={this.state.date} onChange={this.handleDate}>
+                            </input>
+                        </label>
+                        <br/>
+                        <label>
+                            Description:
+                            <input id={"description-edit-input"} value={this.state.description} onChange={this.handleDescription}>
+                            </input>
+                        </label>
+                        <br/>
+                        <br/>
+                        <button className={"Event-Button"} onClick={this.handleEventCreate}>
+                            Create Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+}
 
 class DisplayPlanner extends Component{
     constructor(props){
@@ -15,6 +105,7 @@ class DisplayPlanner extends Component{
             password: null,
             related_events: null,
             title: null,
+            current_user: this.props.current_user,
             current_planner_id : this.props.current_planner_id,
 
             //to be used to determine queue of fetches left
@@ -26,10 +117,10 @@ class DisplayPlanner extends Component{
             event_descriptions: [],
             event_creator_names: [],
         };
-
         this.GetPlannerInfo = this.GetPlannerInfo.bind(this);
         this.getEvents = this.getEvents.bind(this);
         this.renderEvents = this.renderEvents.bind(this);
+        this.refresh = this.refresh.bind(this);
     }
 
     //called at start, gathers the planner info, then gathers all the Event info
@@ -84,7 +175,6 @@ class DisplayPlanner extends Component{
     componentDidMount() {
         this.GetPlannerInfo();
     }
-
 
     //all events are gathered and stored as arrays here
     async getEvents(){
@@ -145,7 +235,6 @@ class DisplayPlanner extends Component{
                     }
 
                 });
-            console.log(this.state.event_descriptions);
         }
     }
 
@@ -157,8 +246,15 @@ class DisplayPlanner extends Component{
               </div>
             );
         let list = [];
+        //used to float buttons
+        let float_left = {
+                float: 'left',
+            };
+        let float_right = {
+                float: 'right',
+            };
         for (let i = 0; i < this.state.event_count; i += 1) {
-            console.log("name" + this.state.event_descriptions[i]);
+            //TODO: make this a separate object, pass in props
             list.push(
                 <div className={"User-Event"} key={i}>
                     <h3>
@@ -167,13 +263,22 @@ class DisplayPlanner extends Component{
                     <div>
                         {this.state.event_descriptions[i]}
                     </div>
+                    <br/>
                     <div>
                         Created by: {this.state.event_creator_names[i]}
                     </div>
+                    <br/>
+                    <button className={"Event-Button"} style={float_left}>I'm going!</button>
+                    <button className={"Event-Button"} style={float_right}>Edit</button>
+                    <button className={"Event-Button"} style={float_right}>Delete</button>
                 </div>
             );
         }
         return list;
+    }
+
+    refresh(){
+
     }
 
     render(){
@@ -184,18 +289,51 @@ class DisplayPlanner extends Component{
                 </div>
             );
         }else{
-            let list = this.renderEvents();
+            //Rendering events here
+            let event_list = this.renderEvents();
+            let float_left = {
+                float: 'left'
+            };
             return(
                 <div>
-                    <h1 className={"Planner-Title"}>{this.state.title}</h1>
-                    <div>{list}</div>
+                    <h1 className={"Planner-Title"}>
+                        {/*back arrow button on planner page*/}
+                        <button className={"Back-Arrow"} onClick={() =>{
+                            this.props.onClickReturn();
+                        }}>
+                        </button>
+                        {this.state.title}
+                    </h1>
+                    {/*create new event button info*/}
+                    <CreateEventDisplay current_user={this.state.current_user}
+                                 current_planner_id={this.state.current_planner_id}
+                                        //method passed in basically refreshes page
+                                        refresh_event_list={()=> {
+                                            //reset values on page
+                                            this.setState({
+                                                event_names: [],
+                                                event_dates: [],
+                                                event_descriptions: [],
+                                                event_creator_names: []
+                                            });
+                                            this.GetPlannerInfo();
+                                            event_list = this.renderEvents();
+                                            }}>
+                    </CreateEventDisplay>
+                    <div>{event_list}</div>
+                    <button className={"Event-Button"} style={float_left} onClick={() =>{
+                        document.getElementById("tempModal").setAttribute("style", "display: block");
+                        console.log("Modal visible")
+                    }}>
+                        Create New Event
+
+                    </button>
                 </div>
             )
         }
     }
 
 }
-
 
 class LoginController extends Component{
     constructor(props){
@@ -454,15 +592,17 @@ class LoginController extends Component{
                 return(
                   <div>
                       <h1>
-                          {/*passing in actual planner unique ID value for query*/}
-                          <DisplayPlanner current_planner_id={this.state.related_tables[this.state.current_planner_id]}/>
+                          {/*passing in actual planner unique ID value for query*/} {/*use the onClickReturn function in child to return to parent*/}
+                          <DisplayPlanner current_planner_id={this.state.related_tables[this.state.current_planner_id]}
+                                          onClickReturn={() =>{this.setState({planner:false})}}
+                                          current_user={this.state.username}/>
                       </h1>
 
                   </div>
                 );
             }else {
                 return (
-                    <div>
+                    <div className={"Login-Box"}>
                         <h1>
                             Hello, {this.state.username}. What would you like to do?
                         </h1>
