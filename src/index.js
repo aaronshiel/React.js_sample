@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import './App.css'
 
-//TODO: check google docs
+//Displays when user is trying to create a new event inside a planner
 class CreateEventDisplay extends Component{
     constructor(props) {
         super(props);
@@ -20,18 +20,22 @@ class CreateEventDisplay extends Component{
     }
 
     //TODO: make all handle events into one method, for other classes too
+    //updates date state value
     handleDate(event){
         this.setState({
             date: event.target.value,
         })
     }
 
+    //updates description state value
     handleDescription(event){
         this.setState({
             description: event.target.value,
         })
     }
 
+    //called when user is trying to create a new event
+    //Posts a new event to database
     handleEventCreate(){
         let data = new URLSearchParams();
         data.append('username', this.state.current_user);
@@ -50,10 +54,10 @@ class CreateEventDisplay extends Component{
         fetch('http://127.0.0.1:5000/new_event' , options)
             .then(response =>{
                 if(response.ok){
+                    //re-render the event list since we have a new one, method comes from parent component
                     this.props.refresh_event_list();
                 }else{
-                    if(response.status === 401)
-                        document.getElementById("Password-Match").innerHTML = "Account already exists";
+                    console.log("Error creating new event");
                 }
             })
     }
@@ -61,11 +65,15 @@ class CreateEventDisplay extends Component{
     render(){
         return(
             <div>
+                {/*TODO: why is this script is the only one being considered*/}
                 <script>
                     {
                         window.onclick = function(event){
                         if(event.target === document.getElementById("create_event_modal")){
-                            document.getElementById("create_event_modal").setAttribute("style", "display: none");
+                            document.getElementById("create_event_modal").setAttribute("style", "display: none; z-index: -1");
+                        }
+                        if(event.target === document.getElementById("delete_event_modal")){
+                            document.getElementById("delete_event_modal").setAttribute("style", "display: none; z-index: -1");
                         }
                     }}
                 </script>
@@ -94,7 +102,8 @@ class CreateEventDisplay extends Component{
     }
 }
 
-//TODO: just created this, need
+// Displayed when a user presses the "delete" button on an event
+// Popup UI asking user if they'd like to delete relevant event
 class DeleteEventDisplay extends Component{
     constructor(props) {
         super(props);
@@ -104,17 +113,11 @@ class DeleteEventDisplay extends Component{
         }
     }
 
+    //TODO: Implement event delete method
+
     render() {
         return(
             <div>
-                <script>
-                    {
-                        window.onclick = function(event){
-                        if(event.target === document.getElementById("delete_event_modal")){
-                            document.getElementById("delete_event_modal").setAttribute("style", "display: none");
-                        }
-                    }}
-                </script>
                 <div className={"modal"} id={"delete_event_modal"}>
                     <div className={"modal-content"}>
                         <label>
@@ -129,10 +132,11 @@ class DeleteEventDisplay extends Component{
                     </div>
                 </div>
             </div>
-        );
+        )
     }
 }
 
+//Displays when a user accesses a planner
 class DisplayPlanner extends Component{
     constructor(props){
         super(props);
@@ -164,10 +168,11 @@ class DisplayPlanner extends Component{
     }
 
     //called at start, gathers the planner info, then gathers all the Event info
+    //backend requires planner_id (parent planner id)
     GetPlannerInfo(){
+        //getting planner info
         let data = new URLSearchParams();
         data.append('planner_id', this.state.current_planner_id);
-
         const options = {
               method: 'post',
               headers: {
@@ -201,6 +206,7 @@ class DisplayPlanner extends Component{
                             })
                         )
                         .then(() =>
+                            //getting event info
                         {this.getEvents(this.state.related_events.length);}
                         );
 
@@ -216,8 +222,10 @@ class DisplayPlanner extends Component{
         this.GetPlannerInfo();
     }
 
-    //all events are gathered and stored as arrays here
+    //Called by GetPlannerInfo once planner info id retrieved
+    //all events and their info are gathered and stored as arrays here
     async getEvents(){
+        //if there are no events to be queried
         if(this.state.event_count === 0) {
             this.setState({
                 eventFetchQueue: 0,
@@ -227,6 +235,7 @@ class DisplayPlanner extends Component{
         }
         //TODO: use redux to hold info
         //TODO: implement promise.all to grab all events at once
+        //query each event
         for(let i = 0; i < this.state.event_count; i += 1) {
             let data = new URLSearchParams();
             data.append('event_id', this.state.related_events[i]);
@@ -259,6 +268,7 @@ class DisplayPlanner extends Component{
                             });
                         })
                             .then(() =>{
+                                //for every event successfully retrieved, reduce eventQueue by 1
                                 this.setState({
                                     eventFetchQueue: this.state.eventFetchQueue - 1,
                                     loading:false,
@@ -267,6 +277,7 @@ class DisplayPlanner extends Component{
                     } else {
                         if(response.status === 404){
                             console.log("could not find that event");
+                            //for every event unsuccessfully retrieved, reduce eventQueue by 1
                             this.setState({
                                     eventFetchQueue: this.state.eventFetchQueue - 1,
                                     loading:false,
@@ -278,7 +289,10 @@ class DisplayPlanner extends Component{
         }
     }
 
+    //Called once all event info is retrieved
+    //displays each event as a singular component
     renderEvents(){
+        //if there are no events to render, do nothing
         if(this.state.event_count === 0)
             return (
               <div>
@@ -293,6 +307,7 @@ class DisplayPlanner extends Component{
         let float_right = {
                 float: 'right',
             };
+
         for (let i = 0; i < this.state.event_count; i += 1) {
             //TODO: make this a separate object, pass in props
             list.push(
@@ -310,7 +325,11 @@ class DisplayPlanner extends Component{
                     <br/>
                     <button className={"Event-Button"} style={float_left}>I'm going!</button>
                     <button className={"Event-Button"} style={float_right}>Edit</button>
-                    <button className={"Event-Button"} style={float_right}>Delete</button>
+                    {/*TODO: get this to open the delete event modal*/}
+                    <button className={"Event-Button"} style={float_right}
+                            onClick={() => {
+                                document.getElementById("delete_event_modal").setAttribute("style", "display: block; z-index: 2");
+                            console.log("Here")}}>Delete</button>
                 </div>
             );
         }
@@ -318,6 +337,7 @@ class DisplayPlanner extends Component{
     }
 
     render(){
+        //if we are still fetching event/planner info
         if(this.state.loading || this.state.eventFetchQueue > 0) {
             return (
                 <div>
@@ -325,7 +345,7 @@ class DisplayPlanner extends Component{
                 </div>
             );
         }else{
-            //Rendering events here
+            //We have planner and event info, start rendering
             let event_list = this.renderEvents();
             let float_left = {
                 float: 'left'
@@ -341,9 +361,12 @@ class DisplayPlanner extends Component{
                         {this.state.title}
                     </h1>
                     {/*create new event button info*/}
+                    <DeleteEventDisplay>
+                        h
+                    </DeleteEventDisplay>
                     <CreateEventDisplay current_user={this.state.current_user}
                                  current_planner_id={this.state.current_planner_id}
-                                        //method passed in basically refreshes page
+                                        //method passed in refreshes page
                                         refresh_event_list={()=> {
                                             //reset values on page
                                             this.setState({
@@ -357,16 +380,12 @@ class DisplayPlanner extends Component{
                                             }}>
                     </CreateEventDisplay>
                     {/*delete event button info*/}
-                    <DeleteEventDisplay>
-                        {/*TODO: add onClick turn display : brick on delete buttons in renderlist*/}
-                    </DeleteEventDisplay>
                     <div>{event_list}</div>
                     <button className={"Event-Button"} style={float_left} onClick={() =>{
-                        document.getElementById("create_event_modal").setAttribute("style", "display: block");
-                        console.log("Modal visible")
+                        document.getElementById("create_event_modal").setAttribute("style", "display: block; z-index: 1;");
+                        console.log(document.getElementById("create_event_modal"));
                     }}>
                         Create New Event
-
                     </button>
                 </div>
             )
@@ -375,6 +394,8 @@ class DisplayPlanner extends Component{
 
 }
 
+//Main
+//Displays by default
 class LoginController extends Component{
     constructor(props){
         super(props);
@@ -405,24 +426,29 @@ class LoginController extends Component{
         this.handleVerifyPassword = this.handleVerifyPassword.bind(this);
     }
 
+    //updates username state value
     handleUser(event){
         this.setState({
            username: event.target.value,
         });
     }
 
+    //updates password state value
     handlePassword(event){
         this.setState({
            password: event.target.value,
         });
     }
 
+    //updates verify password state value
     handleVerifyPassword(event){
         this.setState({
            verify_password: event.target.value,
         });
     }
 
+    //Create Account button pressed
+    //Backend requires username and password params
     handleCreateAccount(){
         if(this.state.verify_password !== this.state.password){
             document.getElementById("Password-Match").innerHTML = "Passwords do not match";
@@ -451,12 +477,15 @@ class LoginController extends Component{
                         })
                     })
                 }else{
+                    //username already exists in database
                     if(response.status === 401)
                         document.getElementById("Password-Match").innerHTML = "Account already exists";
                 }
             })
     }
 
+    //Login button pressed
+    //Backend requires username and password params
     handleLoginAccount(){
         let data = new URLSearchParams();
         data.append('username', this.state.username);
@@ -484,8 +513,10 @@ class LoginController extends Component{
                         })
                     })
                 }else{
+                    //account is not found within database
                     if(response.status === 401)
                         document.getElementById("Account-Find").innerHTML = "Account not found";
+                    //wrong password entry
                     if(response.status === 402)
                         document.getElementById("Account-Find").innerHTML = "Password does not match";
 
@@ -493,6 +524,8 @@ class LoginController extends Component{
             })
     }
 
+    //user pressed "Create Account" button
+    //renders a UI for account creation
     renderCreateField(){
         return(
             <div className={"Login-Box"}>
@@ -529,7 +562,7 @@ class LoginController extends Component{
                 })}>
                     Go To Login
                 </button>
-
+                {/* this div is modified when wrong password is entered */}
                 <div id="Password-Match" className={"Password-No-Match"}>
 
                 </div>
@@ -537,6 +570,9 @@ class LoginController extends Component{
         );
     }
 
+    //Displayed by default
+    //Displayed when "Login to account" is pressed
+    //renders UI for user to login through
     renderLoginField(){
         return(
             <div className={"Login-Box"}>
@@ -574,6 +610,7 @@ class LoginController extends Component{
         );
     }
 
+    //Creates an access point for each planner user has access to
     renderPlannerList(n) {
         let list = [];
 
@@ -600,9 +637,7 @@ class LoginController extends Component{
         return list;
     }
 
-    //TODO: NewEvent/NewPlanner
     render(){
-        //probably do a cache check method
         //check if we are logged in yet or not
         if(!this.state.login && !this.state.createAccount){
             return(
